@@ -4,10 +4,15 @@ Boardflow is a Trello-inspired project board SPA built with React, JavaScript, V
 
 ## Features
 
-- Public catalog and details pages for boards
+- Public catalog and details pages for public boards; board owners can mark their boards private
+- Header search with live results limited to public boards
+- Members can edit their own profile name; database rules prevent editing another member's profile
+- About, Contact, Features, and FAQ information pages
+- A Help form that securely stores incoming questions in Supabase
 - Email/password registration, login, session persistence, and logout
+- Password recovery by email with a secure reset link
 - Private dashboard and board workspaces with route guards
-- Board and task CRUD backed by Supabase; task authors can edit/delete their records and board owners can edit/delete boards
+- Board and task CRUD backed by Supabase; only board owners can manage their workspaces and tasks on their own boards
 - Task status and priority controls, controlled auth/search inputs, loading and error states
 - Responsive layout with reusable components and Context API authentication
 
@@ -16,22 +21,26 @@ Boardflow is a Trello-inspired project board SPA built with React, JavaScript, V
 1. Install Node.js 18+.
 2. Install packages: `npm install`
 3. Copy `.env.example` to `.env` and add the Supabase project URL and anon key.
-4. In the Supabase SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql).
+4. In the Supabase SQL Editor, run [`supabase/schema.sql`](supabase/schema.sql), [`supabase/help_questions.sql`](supabase/help_questions.sql), [`supabase/members_only.sql`](supabase/members_only.sql), [`supabase/board_visibility.sql`](supabase/board_visibility.sql), and [`supabase/owner_only_workspaces.sql`](supabase/owner_only_workspaces.sql). If your database is already set up, run only `owner_only_workspaces.sql` for this access change.
 5. Start the app: `npm run dev`
 6. Create a Supabase Auth user through the app and add boards/tasks.
 7. Create a production build: `npm run build`
+
+## Code formatting
+
+Prettier formats the JavaScript, JSX, and CSS files in `src/`. Run `npm run format` to format them, or `npm run format:check` to check formatting without changing files. Formatting preferences are in `.prettierrc.json`.
 
 The Vite development server prints a local URL (usually `http://localhost:5173`). Without Supabase configuration, the app starts in setup mode and explains how to connect the live service; it does not show fake records.
 
 ## Deploy
 
-Deploy the frontend on Vercel, Netlify, or another static host. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as build environment variables, then deploy the `dist/` output from `npm run build`. Add the deployed frontend domain to Supabase Auth's allowed redirect URLs. Supabase hosts the authentication and persistent database, so there is no separate API server to deploy.
+Deploy the frontend on Vercel, Netlify, or another static host. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as build environment variables, then deploy the `dist/` output from `npm run build`. In Supabase Authentication URL Configuration, add the deployed frontend URL and its `/reset-password` path to the allowed redirect URLs. For local development, allow `http://localhost:5173/reset-password` too. Supabase hosts the authentication and persistent database, so there is no separate API server to deploy.
 
 **Live frontend:** add your deployed URL here before submission.
 
 ## Architecture
 
-`src/context/AuthContext.jsx` shares the current Supabase session and auth actions across the app. `src/lib/data.js` contains the remote data operations. React Router separates public pages (`/boards`, `/boards/:boardId`) from guarded private pages (`/dashboard`, `/workspace/:boardId`). `src/components` contains shared navigation, dialogs, notices, and route guard components. Supabase table definitions, constraints, and row-level security policies are in `supabase/schema.sql`.
+`src/context/AuthContext.jsx` shares the current Supabase session and auth actions across the app. `src/lib/data.js` contains the remote data operations. React Router provides public directories and dynamic detail pages for boards, tasks, and members (`/boards/:boardId`, `/tasks/:taskId`, `/profiles/:profileId`), informational pages (`/about`, `/contact`, `/features`, `/faq`), and guarded workspace pages (`/dashboard`, `/workspace/:boardId`). `src/components` contains shared navigation, footer, dialogs, notices, and route guard components. Supabase table definitions, constraints, and row-level security policies are in `supabase/schema.sql`.
 
 ## Functional Guide
 
@@ -48,24 +57,34 @@ Students, small teams, and anyone who wants a clear lightweight project tracker.
 | Route | Access | Purpose |
 | --- | --- | --- |
 | `/` | Everyone | Introduction and product preview |
-| `/boards` | Everyone | Live public catalog of boards |
-| `/boards/:boardId` | Everyone | Public board details |
+| `/boards` | Everyone | Live catalog of public boards |
+| `/boards/:boardId` | Everyone for public boards; owner for private boards | Board details |
+| `/tasks` | Signed in | Searchable directory of tasks across boards |
+| `/tasks/:taskId` | Signed in | Task details with links to its board and author |
+| `/people` | Signed in | Searchable member directory |
+| `/profiles/:profileId` | Signed in | Member profile and their boards |
+| `/about` | Everyone | About Boardflow and its purpose |
+| `/contact` | Everyone | Contact guidance for the student project |
+| `/help` | Everyone | Submit a question through the Supabase-backed help form |
+| `/features` | Everyone | Overview of app features |
+| `/faq` | Everyone | Answers to common questions |
 | `/login` | Guests | Sign into an account |
 | `/register` | Guests | Create an account |
+| `/reset-password` | Password reset link | Choose a new account password |
 | `/dashboard` | Signed in | See and manage owned boards |
-| `/workspace/:boardId` | Signed in | Manage tasks on a board |
+| `/workspace/:boardId` | Board owner | Manage tasks on your own board |
 
 ### Main user flows
 
 1. A guest browses public boards and opens a board's details.
 2. A guest registers or logs in with email and password.
 3. A signed-in user creates a board from the navigation or dashboard.
-4. The owner adds tasks, edits task details, changes status or priority, and deletes tasks they authored.
+4. The owner opens their workspace to add tasks, edit task details, change status or priority, and delete tasks they authored. Other signed-in users can view public board previews but cannot edit or open someone else's workspace.
 5. The owner can edit or delete their board. Logging out returns the user to public pages.
 
 ### Data and persistence
 
-Supabase Auth stores user accounts. PostgreSQL stores profiles, boards, and tasks. The app reads and writes records through the Supabase JavaScript client, and the SQL schema enforces field constraints and row-level security. Boards and tasks persist across visits.
+Supabase Auth stores user accounts. PostgreSQL stores profiles, boards, and tasks. The app reads and writes records through the Supabase JavaScript client, and the SQL schema enforces field constraints and row-level security. Boards are public by default; the owner can make a board private. The visibility migration limits private board and task reads to the owner, while public boards remain browsable. The owner-only workspace migration restricts board and task changes to the board owner. The member-only migration limits task and profile reads to signed-in users. Boards and tasks persist across visits.
 
 ### Validation and error handling
 
@@ -73,7 +92,7 @@ Forms use required fields, minimum/maximum lengths, and email/password input con
 
 ### Test account / reviewer notes
 
-Create a reviewer account in the deployed app and add one or more boards if no public examples are present. The database starts empty intentionally. To let reviewers explore board details before signing in, make boards public in the catalog (the schema permits public reads). Editing/deleting is restricted by row-level policies to the record author/board owner.
+Create a reviewer account in the deployed app and add one or more boards if no public examples are present. The database starts empty intentionally. To let reviewers explore board details before signing in, make boards public in the catalog (the schema permits public reads). Only a board owner can access its workspace and manage its tasks; row-level policies enforce this on Supabase too.
 
 ### Deployment links
 
@@ -82,9 +101,6 @@ Create a reviewer account in the deployed app and add one or more boards if no p
 
 ### Known limitations
 
-- This first version has no invitations or multi-user membership management; any signed-in user can create a task, while only its author can edit or delete it.
+- This first version has no invitations or multi-user membership management; public boards are viewable by everyone, while their workspaces and task editing are restricted to the owner.
+- Help form submissions are stored in Supabase for the project owner to review; automatic email notifications and replies are not configured.
 - Add sample project records through the app before submission so the public catalog and reviewer flow have content.
-
-## Source-control submission checklist
-
-The assignment requires a public GitHub repository, at least five meaningful commits spread across at least three different days, and a public deployed frontend URL above. Those account/repository/deployment actions must be completed by the project owner; they cannot be truthfully represented as completed by this generated source folder.

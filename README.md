@@ -36,7 +36,7 @@ The Vite development server prints a local URL (usually `http://localhost:5173`)
 
 Deploy the frontend on Vercel, Netlify, or another static host. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as build environment variables, then deploy the `dist/` output from `npm run build`. In Supabase Authentication URL Configuration, add the deployed frontend URL and its `/reset-password` path to the allowed redirect URLs. For local development, allow `http://localhost:5173/reset-password` too. Supabase hosts the authentication and persistent database, so there is no separate API server to deploy.
 
-**Live frontend:** add your deployed URL here before submission.
+**Live frontend:** https://boardflow-exam.vercel.app
 
 ## Architecture
 
@@ -194,7 +194,7 @@ Component styling is provided by the external stylesheet `src/styles.css`. Reusa
 
 ### Deployment links
 
-- **Frontend:** Not yet recorded. Add the public deployment URL here before submission.
+- **Frontend:** https://boardflow-exam.vercel.app
 - **Backend:** Supabase hosted project (BaaS); there is no separate API server.
 
 Help submissions are stored for the project owner to review; automatic email notifications and replies are not configured. The app does not currently provide invitations or multi-user membership management.

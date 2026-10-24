@@ -9,20 +9,18 @@ export default function ResetPassword() {
   const navigate = useNavigate()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [form, setForm] = useState({ password: '', confirmPassword: '' })
 
   const submit = async (event) => {
     event.preventDefault()
     setError('')
-    const form = new FormData(event.currentTarget)
-    const password = form.get('password')
-    const confirmation = form.get('confirmPassword')
-    if (password !== confirmation) {
+    if (form.password !== form.confirmPassword) {
       setError('The passwords do not match.')
       return
     }
 
     setBusy(true)
-    const { error: updateError } = await updatePassword(password)
+    const { error: updateError } = await updatePassword(form.password)
     setBusy(false)
     if (updateError) setError(updateError.message)
     else navigate('/dashboard', { replace: true })
@@ -59,6 +57,10 @@ export default function ResetPassword() {
                 <input
                   type="password"
                   name="password"
+                  value={form.password}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, password: event.target.value }))
+                  }
                   required
                   minLength="6"
                   maxLength="72"
@@ -70,6 +72,10 @@ export default function ResetPassword() {
                 <input
                   type="password"
                   name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, confirmPassword: event.target.value }))
+                  }
                   required
                   minLength="6"
                   maxLength="72"

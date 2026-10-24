@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [saveMessage, setSaveMessage] = useState('')
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [fullName, setFullName] = useState('')
 
   useEffect(() => {
     let active = true
@@ -43,20 +44,20 @@ export default function ProfilePage() {
     event.preventDefault()
     setSaveError('')
     setSaveMessage('')
-    const fullName = new FormData(event.currentTarget).get('full_name').trim()
-    if (fullName.length < 2) {
+    const name = fullName.trim()
+    if (name.length < 2) {
       setSaveError('Please enter a name with at least 2 characters.')
       return
     }
     setSaving(true)
     try {
-      const { data, error: profileError } = await updateProfile(profile.id, { full_name: fullName })
+      const { data, error: profileError } = await updateProfile(profile.id, { full_name: name })
       if (profileError) {
         setSaveError(profileError.message)
         return
       }
       setProfile(data)
-      const { error: accountError } = await updateAccountName(fullName)
+      const { error: accountError } = await updateAccountName(name)
       setEditing(false)
       setSaveMessage(
         accountError
@@ -99,6 +100,7 @@ export default function ProfilePage() {
             onClick={() => {
               setSaveError('')
               setSaveMessage('')
+              setFullName(profile.full_name || '')
               setEditing(true)
             }}
           >
@@ -160,7 +162,8 @@ export default function ProfilePage() {
               Your name
               <input
                 name="full_name"
-                defaultValue={profile.full_name}
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
                 required
                 minLength="2"
                 maxLength="60"

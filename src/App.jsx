@@ -29,14 +29,18 @@ export default function App() {
   const { user } = useAuth()
   const [showCreate, setShowCreate] = useState(false)
   const [error, setError] = useState('')
+  const [boardForm, setBoardForm] = useState({ title: '', description: '', is_public: 'true' })
+  const openCreate = () => {
+    setBoardForm({ title: '', description: '', is_public: 'true' })
+    setError('')
+    setShowCreate(true)
+  }
   const create = async (e) => {
     e.preventDefault()
     setError('')
-    const form = new FormData(e.currentTarget)
     const { data, error: err } = await createBoard({
-      title: form.get('title'),
-      description: form.get('description'),
-      is_public: form.get('is_public') === 'true',
+      ...boardForm,
+      is_public: boardForm.is_public === 'true',
     })
 
     if (err) setError(err.message)
@@ -47,7 +51,7 @@ export default function App() {
   }
   return (
     <>
-      <Topbar onCreate={() => setShowCreate(true)} />
+      <Topbar onCreate={openCreate} />
       {!isConfigured && (
         <div className="setup-banner">
           <span>
@@ -107,7 +111,7 @@ export default function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <Dashboard onCreate={() => setShowCreate(true)} />
+            <Dashboard onCreate={openCreate} />
             </ProtectedRoute>
           }
         />
@@ -129,6 +133,10 @@ export default function App() {
               Board name
               <input
                 name="title"
+                value={boardForm.title}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, title: event.target.value }))
+                }
                 required
                 minLength="2"
                 maxLength="60"
@@ -137,11 +145,25 @@ export default function App() {
             </label>
             <label>
               Description
-              <textarea name="description" maxLength="240" placeholder="What are you working on?" />
+              <textarea
+                name="description"
+                value={boardForm.description}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, description: event.target.value }))
+                }
+                maxLength="240"
+                placeholder="What are you working on?"
+              />
             </label>
             <label>
               Who can see this board?
-              <select name="is_public" defaultValue="true">
+              <select
+                name="is_public"
+                value={boardForm.is_public}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, is_public: event.target.value }))
+                }
+              >
                 <option value="true">Public — anyone can view</option>
                 <option value="false">Private — only you can view</option>
               </select>

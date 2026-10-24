@@ -43,6 +43,8 @@ export default function BoardWorkspace() {
     [loading, setLoading] = useState(true),
     [error, setError] = useState(''),
     [modal, setModal] = useState(null),
+    [taskForm, setTaskForm] = useState({ title: '', description: '', status: 'todo', priority: 'Medium' }),
+    [boardForm, setBoardForm] = useState({ title: '', description: '', is_public: 'true' }),
     [menu, setMenu] = useState(false),
     [confirmDelete, setConfirmDelete] = useState(null),
     [deleting, setDeleting] = useState(false)
@@ -72,15 +74,26 @@ export default function BoardWorkspace() {
   }, [refresh])
 
   const isOwner = board?.owner_id === user.id
+  const openTaskForm = (task, status = 'todo') => {
+    setTaskForm({
+      title: task?.title || '',
+      description: task?.description || '',
+      status: task?.status || status,
+      priority: task?.priority || 'Medium',
+    })
+    setModal({ type: 'task', task, status })
+  }
+  const openBoardForm = () => {
+    setBoardForm({
+      title: board.title,
+      description: board.description || '',
+      is_public: board.is_public ? 'true' : 'false',
+    })
+    setModal({ type: 'board' })
+  }
   const saveTask = async (e) => {
     e.preventDefault()
-    const f = new FormData(e.currentTarget),
-      values = {
-        title: f.get('title'),
-        description: f.get('description'),
-        status: f.get('status'),
-        priority: f.get('priority'),
-      }
+    const values = taskForm
     const result = modal?.task
       ? await updateTask(modal.task.id, {
           ...values,
@@ -110,11 +123,10 @@ export default function BoardWorkspace() {
 
   const saveBoard = async (e) => {
     e.preventDefault()
-    const f = new FormData(e.currentTarget)
     const { error } = await updateBoard(boardId, {
-      title: f.get('title'),
-      description: f.get('description'),
-      is_public: f.get('is_public') === 'true',
+      title: boardForm.title,
+      description: boardForm.description,
+      is_public: boardForm.is_public === 'true',
     })
 
     if (error) setError(error.message)
@@ -178,7 +190,7 @@ export default function BoardWorkspace() {
                 <div className="dropdown">
                   <button
                     onClick={() => {
-                      setModal({ type: 'board' })
+                      openBoardForm()
                       setMenu(false)
                     }}
                   >
@@ -204,7 +216,7 @@ export default function BoardWorkspace() {
             <span className={`status-dot ${board.is_public ? 'green' : 'violet'}`} />{' '}
             {board.is_public ? 'Public board' : 'Private board'}
           </span>
-          <button className="button button-primary" onClick={() => setModal({ type: 'task' })}>
+          <button className="button button-primary" onClick={() => openTaskForm()}>
             <Plus size={16} /> Add a task
           </button>
         </div>
@@ -222,7 +234,7 @@ export default function BoardWorkspace() {
                 <button
                   className="icon-button add-column-task"
                   aria-label={`Add task to ${status.label}`}
-                  onClick={() => setModal({ type: 'task', status: status.id })}
+                  onClick={() => openTaskForm(null, status.id)}
                 >
                   <Plus size={16} />
                 </button>
@@ -242,7 +254,7 @@ export default function BoardWorkspace() {
                           <button
                             className="icon-button"
                             aria-label="Edit task"
-                            onClick={() => setModal({ type: 'task', task })}
+                            onClick={() => openTaskForm(task)}
                           >
                             <Pencil size={14} />
                           </button>
@@ -287,7 +299,7 @@ export default function BoardWorkspace() {
               </div>
               <button
                 className="column-add"
-                onClick={() => setModal({ type: 'task', status: status.id })}
+                onClick={() => openTaskForm(null, status.id)}
               >
                 <Plus size={15} /> Add a task
               </button>
@@ -308,7 +320,10 @@ export default function BoardWorkspace() {
               Task name
               <input
                 name="title"
-                defaultValue={modal.task?.title}
+                value={taskForm.title}
+                onChange={(event) =>
+                  setTaskForm((current) => ({ ...current, title: event.target.value }))
+                }
                 required
                 minLength="2"
                 maxLength="100"
@@ -319,7 +334,10 @@ export default function BoardWorkspace() {
               Details
               <textarea
                 name="description"
-                defaultValue={modal.task?.description}
+                value={taskForm.description}
+                onChange={(event) =>
+                  setTaskForm((current) => ({ ...current, description: event.target.value }))
+                }
                 maxLength="500"
                 placeholder="A few helpful details…"
               />
@@ -327,7 +345,13 @@ export default function BoardWorkspace() {
             <div className="form-row">
               <label>
                 Status
-                <select name="status" defaultValue={modal.task?.status || modal.status || 'todo'}>
+                <select
+                  name="status"
+                  value={taskForm.status}
+                  onChange={(event) =>
+                    setTaskForm((current) => ({ ...current, status: event.target.value }))
+                  }
+                >
                   {statuses.map((s) => (
                     <option value={s.id} key={s.id}>
                       {s.label}
@@ -337,7 +361,13 @@ export default function BoardWorkspace() {
               </label>
               <label>
                 Priority
-                <select name="priority" defaultValue={modal.task?.priority || 'Medium'}>
+                <select
+                  name="priority"
+                  value={taskForm.priority}
+                  onChange={(event) =>
+                    setTaskForm((current) => ({ ...current, priority: event.target.value }))
+                  }
+                >
                   {priorities.map((p) => (
                     <option key={p}>{p}</option>
                   ))}
@@ -359,7 +389,10 @@ export default function BoardWorkspace() {
               Board name
               <input
                 name="title"
-                defaultValue={board.title}
+                value={boardForm.title}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, title: event.target.value }))
+                }
                 required
                 minLength="2"
                 maxLength="60"
@@ -367,11 +400,24 @@ export default function BoardWorkspace() {
             </label>
             <label>
               Description
-              <textarea name="description" defaultValue={board.description} maxLength="240" />
+              <textarea
+                name="description"
+                value={boardForm.description}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, description: event.target.value }))
+                }
+                maxLength="240"
+              />
             </label>
             <label>
               Who can see this board?
-              <select name="is_public" defaultValue={board.is_public ? 'true' : 'false'}>
+              <select
+                name="is_public"
+                value={boardForm.is_public}
+                onChange={(event) =>
+                  setBoardForm((current) => ({ ...current, is_public: event.target.value }))
+                }
+              >
                 <option value="true">Public — anyone can view</option>
                 <option value="false">Private — only you can view</option>
               </select>

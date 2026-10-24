@@ -12,7 +12,11 @@ export default function AuthPage({ mode }) {
   const [error, setError] = useState(''),
     [message, setMessage] = useState(''),
     [busy, setBusy] = useState(false),
-    [forgotPassword, setForgotPassword] = useState(false)
+    [forgotPassword, setForgotPassword] = useState(false),
+    [form, setForm] = useState({ name: '', email: '', password: '' })
+
+  const updateField = (event) =>
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
 
   if (user) return <Navigate to="/dashboard" replace />
   const submit = async (e) => {
@@ -25,10 +29,9 @@ export default function AuthPage({ mode }) {
       return
     }
     setBusy(true)
-    const f = new FormData(e.currentTarget)
     const res = registering
-      ? await signUp(f.get('email'), f.get('password'), f.get('name'))
-      : await signIn(f.get('email'), f.get('password'))
+      ? await signUp(form.email, form.password, form.name)
+      : await signIn(form.email, form.password)
     setBusy(false)
 
     if (res.error) setError(res.error.message)
@@ -44,9 +47,11 @@ export default function AuthPage({ mode }) {
       setError('Connect Supabase first. See the setup guide in README.md.')
       return
     }
-    const email = new FormData(e.currentTarget).get('email').trim()
     setBusy(true)
-    const res = await resetPassword(email, `${window.location.origin}/reset-password`)
+    const res = await resetPassword(
+      form.email.trim(),
+      `${window.location.origin}/reset-password`
+    )
     setBusy(false)
     if (res.error) setError(res.error.message)
     else
@@ -93,6 +98,8 @@ export default function AuthPage({ mode }) {
               <input
                 type="email"
                 name="email"
+                value={form.email}
+                onChange={updateField}
                 required
                 maxLength="254"
                 placeholder="you@example.com"
@@ -124,6 +131,8 @@ export default function AuthPage({ mode }) {
                 Your name
                 <input
                   name="name"
+                  value={form.name}
+                  onChange={updateField}
                   required
                   minLength="2"
                   maxLength="60"
@@ -137,6 +146,8 @@ export default function AuthPage({ mode }) {
               <input
                 type="email"
                 name="email"
+                value={form.email}
+                onChange={updateField}
                 required
                 maxLength="254"
                 placeholder="you@example.com"
@@ -148,6 +159,8 @@ export default function AuthPage({ mode }) {
               <input
                 type="password"
                 name="password"
+                value={form.password}
+                onChange={updateField}
                 required
                 minLength="6"
                 maxLength="72"
